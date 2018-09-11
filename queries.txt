@@ -1,0 +1,95 @@
+#figure 1: How do the staff members compare in their total payment amount for each month?
+
+SELECT LEFT((DATE_TRUNC('month',r.rental_date))::VARCHAR,10) AS mon, 
+       SUM(p.amount) total_payment, 
+       CONCAT(s.first_name, ' ', s.last_name) AS full_name
+FROM  rental r
+JOIN payment p
+ON r.rental_id=p.rental_id
+JOIN staff s
+ON s.staff_id=p.staff_id
+GROUP BY mon, full_name
+ORDER BY mon, full_name;
+
+#figure 2: What are the total payments per customer?
+
+SELECT customer.customer_id,
+       SUM(amount) AS total_amount
+FROM customer
+JOIN payment ON payment.customer_id = customer.customer_id
+GROUP BY customer.customer_id
+ORDER BY total_amount DESC;
+
+#figure 3: How do the family movie and non-family movie compare in average rental duration and rental rate?
+
+#formatted without WITH clause
+SELECT is_family_movie, AVG(avg_rental_duration) AS avg_rental_duration, AVG(avg_rental_rate) AS avg_rental_rate
+FROM (SELECT category_name,avg_rental_rate, avg_rental_duration,CASE WHEN category_name='Children' OR   
+             category_name='Classics' OR category_name='Comedy' OR category_name='Family' OR category_name='Music' 
+             THEN 'family_movie' ELSE 'non_family_movie' END AS is_family_movie
+      FROM (SELECT  AVG(f.rental_duration) AS avg_rental_duration,
+                    AVG(f.rental_rate) AS avg_rental_rate,
+                    c.name category_name
+            FROM category c
+            JOIN film_category fc
+            ON c.category_id=fc.category_id
+            JOIN film f
+            ON fc.film_id=f.film_id
+            GROUP BY c.name) sub1) sub2
+GROUP BY is_family_movie;
+
+#formatted with WITH clause
+WITH t1 AS (SELECT  AVG(f.rental_duration) AS avg_rental_duration,
+                    AVG(f.rental_rate) AS avg_rental_rate,
+                    c.name category_name
+            FROM category c
+            JOIN film_category fc
+            ON c.category_id=fc.category_id
+            JOIN film f
+            ON fc.film_id=f.film_id
+            GROUP BY c.name),
+      t2 AS (SELECT category_name,avg_rental_rate, avg_rental_duration,CASE WHEN category_name='Children' OR   
+             category_name='Classics' OR category_name='Comedy' OR category_name='Family' OR category_name='Music' 
+             THEN 'family_movie' ELSE 'non_family_movie' END AS is_family_movie
+             FROM t1) 
+SELECT is_family_movie, AVG(avg_rental_duration) AS avg_rental_duration, AVG(avg_rental_rate) AS avg_rental_rate
+FROM t2
+GROUP BY is_family_movie;
+
+#figure 4:How do the stores compare in their running total of revenue regarding month?
+
+#formatted without WITH clause 
+SELECT store,total_payment, mon, SUM(total_payment) OVER (PARTITION BY store ORDER BY mon) AS running_total
+FROM (SELECT LEFT((DATE_TRUNC('month',r.rental_date))::VARCHAR,10) AS mon, 
+             SUM(p.amount) total_payment, 
+             st.store_id AS store
+      FROM  rental r
+      JOIN payment p
+      ON r.rental_id=p.rental_id
+      JOIN staff s
+      ON s.staff_id=p.staff_id
+      JOIN store st
+      ON st.store_id=s.store_id
+      GROUP BY mon, st.store_id) sub;
+
+#formatted with WITH clause
+WITH t1 AS (SELECT LEFT((DATE_TRUNC('month',r.rental_date))::VARCHAR,10) AS mon, 
+                   SUM(p.amount) total_payment, 
+                   st.store_id AS store
+            FROM  rental r
+            JOIN payment p
+            ON r.rental_id=p.rental_id
+            JOIN staff s
+            ON s.staff_id=p.staff_id
+            JOIN store st
+            ON st.store_id=s.store_id
+            GROUP BY mon, st.store_id)
+
+SELECT store,total_payment, mon, SUM(total_payment) OVER (PARTITION BY store ORDER BY mon) AS running_total
+FROM  t1;
+
+
+
+
+
+
