@@ -1,8 +1,6 @@
 ### Date created:
 9/10/2018
 ### Description: 
-Use Python to understand U.S. bikeshare data. Calculate statistics and build an interactive enviroment where a user chooses the data and filter for a dataset to analyze.
+In this project, use SQL to explore a database related to movie rentals, write SQL code to run SQL queries, answer interesting questions about the database and generate outputs to present your output.
 ### Files used
-- chicago.csv
-- new_york_city.csv
-- washington.csv
+- Sakila DVD Rental database
